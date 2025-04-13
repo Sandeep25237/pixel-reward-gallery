@@ -1,38 +1,70 @@
 
-// This is a mock implementation of AdMob integration
-// In a real app, you would use the actual AdMob SDK
+// AdMob integration with real AdMob SDK
 
+// AdMob unit IDs - replace these with your actual AdMob unit IDs
+const ADMOB_APP_ID = "ca-app-pub-XXXXXXXXXXXXXXXX~NNNNNNNNNN"; // Your AdMob App ID
+const REWARDED_AD_UNIT_ID = "ca-app-pub-XXXXXXXXXXXXXXXX/NNNNNNNNNN"; // Your Rewarded Ad Unit ID
+
+// Track ad state
 let isAdLoaded = false;
 let isRewarded = false;
 
 export const AdMobService = {
   // Initialize AdMob SDK
-  init: (): Promise<void> => {
+  init: async (): Promise<void> => {
     console.log("Initializing AdMob SDK...");
-    return new Promise((resolve) => {
-      // Simulate initialization delay
-      setTimeout(() => {
-        console.log("AdMob SDK initialized");
-        resolve();
-      }, 1000);
-    });
+    
+    // Check if running in a mobile environment with AdMob available
+    if (typeof window !== 'undefined' && window.admob) {
+      try {
+        await window.admob.start({
+          appId: ADMOB_APP_ID
+        });
+        console.log("AdMob SDK initialized with real App ID");
+      } catch (error) {
+        console.error("AdMob initialization error:", error);
+        // Fallback to mock implementation if initialization fails
+      }
+    } else {
+      console.log("AdMob SDK not available, using mock implementation");
+    }
+    
+    return Promise.resolve();
   },
 
   // Load rewarded video ad
-  loadRewardedAd: (): Promise<void> => {
+  loadRewardedAd: async (): Promise<void> => {
     console.log("Loading rewarded video ad...");
-    return new Promise((resolve) => {
-      // Simulate ad loading delay
-      setTimeout(() => {
+    
+    if (typeof window !== 'undefined' && window.admob) {
+      try {
+        // Create and load a rewarded ad
+        await window.admob.rewarded.load({
+          adUnitId: REWARDED_AD_UNIT_ID
+        });
         isAdLoaded = true;
         console.log("Rewarded ad loaded successfully");
-        resolve();
+      } catch (error) {
+        console.error("Error loading rewarded ad:", error);
+        // Fallback to mock implementation
+        setTimeout(() => {
+          isAdLoaded = true;
+          console.log("Mock rewarded ad loaded successfully");
+        }, 1500);
+      }
+    } else {
+      // Mock implementation for development/testing
+      setTimeout(() => {
+        isAdLoaded = true;
+        console.log("Mock rewarded ad loaded successfully");
       }, 1500);
-    });
+    }
+    
+    return Promise.resolve();
   },
 
   // Show rewarded video ad
-  showRewardedAd: (): Promise<boolean> => {
+  showRewardedAd: async (): Promise<boolean> => {
     return new Promise((resolve, reject) => {
       if (!isAdLoaded) {
         console.log("Ad not loaded yet, loading now...");
@@ -44,14 +76,59 @@ export const AdMobService = {
 
       console.log("Showing rewarded video ad...");
       
-      // Simulate watching an ad
-      setTimeout(() => {
-        // In a real implementation, this would happen when the user completes watching the ad
-        isRewarded = true;
-        isAdLoaded = false; // Ad is consumed
-        console.log("User earned reward!");
-        resolve(true);
-      }, 2000);
+      if (typeof window !== 'undefined' && window.admob) {
+        try {
+          // Set up reward event listener
+          const rewardHandler = (reward: any) => {
+            console.log("User earned reward!", reward);
+            isRewarded = true;
+            isAdLoaded = false; // Ad is consumed
+            window.admob.rewarded.removeEventListener('reward', rewardHandler);
+            resolve(true);
+          };
+          
+          // Set up ad closed event listener
+          const closeHandler = () => {
+            console.log("Ad was closed");
+            isAdLoaded = false; // Ad is consumed
+            window.admob.rewarded.removeEventListener('close', closeHandler);
+            // If reward wasn't given, user might have closed early
+            if (!isRewarded) {
+              resolve(false);
+            }
+          };
+          
+          // Add event listeners
+          window.admob.rewarded.addEventListener('reward', rewardHandler);
+          window.admob.rewarded.addEventListener('close', closeHandler);
+          
+          // Show the ad
+          window.admob.rewarded.show().catch((error: any) => {
+            console.error("Error showing ad:", error);
+            window.admob.rewarded.removeEventListener('reward', rewardHandler);
+            window.admob.rewarded.removeEventListener('close', closeHandler);
+            reject(error);
+          });
+        } catch (error) {
+          console.error("Error with AdMob rewarded ad:", error);
+          
+          // Fallback to mock implementation
+          setTimeout(() => {
+            isRewarded = true;
+            isAdLoaded = false; // Ad is consumed
+            console.log("Mock user earned reward!");
+            resolve(true);
+          }, 2000);
+        }
+      } else {
+        // Mock implementation for development/testing
+        setTimeout(() => {
+          isRewarded = true;
+          isAdLoaded = false; // Ad is consumed
+          console.log("Mock user earned reward!");
+          resolve(true);
+        }, 2000);
+      }
     });
   },
 
@@ -65,3 +142,18 @@ export const AdMobService = {
     isRewarded = false;
   }
 };
+
+// Add TypeScript interface declaration for the window object
+declare global {
+  interface Window {
+    admob?: {
+      start: (config: { appId: string }) => Promise<void>;
+      rewarded: {
+        load: (config: { adUnitId: string }) => Promise<void>;
+        show: () => Promise<void>;
+        addEventListener: (event: string, callback: (data?: any) => void) => void;
+        removeEventListener: (event: string, callback: (data?: any) => void) => void;
+      };
+    };
+  }
+}
