@@ -22,22 +22,23 @@ const WallpaperDetail = () => {
     const initAdMob = async () => {
       try {
         await AdMobService.init();
+        console.log("AdMob initialized in WallpaperDetail");
+        
+        // Check if this wallpaper requires an ad
+        if (wallpaper && !wallpaper.requiresAd) {
+          setCanDownload(true);
+        }
       } catch (error) {
         console.error("Error initializing AdMob:", error);
       }
     };
     
     initAdMob();
-  }, []);
+  }, [wallpaper]);
 
   useEffect(() => {
     if (!wallpaper) {
       navigate("/");
-    }
-    
-    // If this wallpaper doesn't require an ad, set canDownload to true
-    if (wallpaper && !wallpaper.requiresAd) {
-      setCanDownload(true);
     }
   }, [wallpaper, navigate]);
 

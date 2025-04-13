@@ -11,16 +11,22 @@ interface AdButtonProps {
 
 const AdButton = ({ onRewardEarned }: AdButtonProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isAdReady, setIsAdReady] = useState(false);
   const { toast } = useToast();
 
   // Pre-load ad when component mounts
   useEffect(() => {
     const preloadAd = async () => {
       try {
+        setIsLoading(true);
         await AdMobService.init();
-        await AdMobService.loadRewardedAd();
+        const loaded = await AdMobService.loadRewardedAd();
+        setIsAdReady(loaded);
+        console.log("Ad preload status:", loaded);
       } catch (error) {
         console.log("Error preloading ad:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -32,7 +38,10 @@ const AdButton = ({ onRewardEarned }: AdButtonProps) => {
     
     try {
       // Initialize AdMob if needed
-      await AdMobService.init();
+      if (!isAdReady) {
+        await AdMobService.init();
+        await AdMobService.loadRewardedAd();
+      }
       
       // Show the rewarded ad
       const success = await AdMobService.showRewardedAd();
@@ -47,7 +56,11 @@ const AdButton = ({ onRewardEarned }: AdButtonProps) => {
         toast({
           title: "Ad not completed",
           description: "Please watch the full ad to download this wallpaper.",
+          variant: "destructive",
         });
+        
+        // Try to reload the ad for next attempt
+        AdMobService.loadRewardedAd();
       }
     } catch (error) {
       console.error("Ad error:", error);
