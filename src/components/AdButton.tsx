@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Play } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
@@ -12,6 +12,20 @@ interface AdButtonProps {
 const AdButton = ({ onRewardEarned }: AdButtonProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  // Pre-load ad when component mounts
+  useEffect(() => {
+    const preloadAd = async () => {
+      try {
+        await AdMobService.init();
+        await AdMobService.loadRewardedAd();
+      } catch (error) {
+        console.log("Error preloading ad:", error);
+      }
+    };
+    
+    preloadAd();
+  }, []);
 
   const handleWatchAd = async () => {
     setIsLoading(true);
@@ -29,14 +43,19 @@ const AdButton = ({ onRewardEarned }: AdButtonProps) => {
           description: "You can now download this wallpaper.",
         });
         onRewardEarned();
+      } else {
+        toast({
+          title: "Ad not completed",
+          description: "Please watch the full ad to download this wallpaper.",
+        });
       }
     } catch (error) {
+      console.error("Ad error:", error);
       toast({
         title: "Error",
         description: "Failed to load the ad. Please try again.",
         variant: "destructive",
       });
-      console.error("Ad error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -46,7 +65,7 @@ const AdButton = ({ onRewardEarned }: AdButtonProps) => {
     <Button 
       onClick={handleWatchAd} 
       disabled={isLoading}
-      className="mt-2 w-full"
+      className="w-full"
     >
       {isLoading ? (
         "Loading Ad..."

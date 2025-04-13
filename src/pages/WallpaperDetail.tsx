@@ -17,9 +17,27 @@ const WallpaperDetail = () => {
   
   const wallpaper = id ? getWallpaperById(id) : undefined;
 
+  // Initialize AdMob when component mounts
+  useEffect(() => {
+    const initAdMob = async () => {
+      try {
+        await AdMobService.init();
+      } catch (error) {
+        console.error("Error initializing AdMob:", error);
+      }
+    };
+    
+    initAdMob();
+  }, []);
+
   useEffect(() => {
     if (!wallpaper) {
       navigate("/");
+    }
+    
+    // If this wallpaper doesn't require an ad, set canDownload to true
+    if (wallpaper && !wallpaper.requiresAd) {
+      setCanDownload(true);
     }
   }, [wallpaper, navigate]);
 

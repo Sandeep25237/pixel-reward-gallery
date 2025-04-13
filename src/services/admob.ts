@@ -1,3 +1,4 @@
+
 // AdMob integration with real AdMob SDK
 
 // AdMob unit IDs - replace these with your actual AdMob unit IDs
@@ -7,10 +8,15 @@ const REWARDED_AD_UNIT_ID = "ca-app-pub-9884257131349852/5595358440"; // Your ac
 // Track ad state
 let isAdLoaded = false;
 let isRewarded = false;
+let isInitialized = false;
 
 export const AdMobService = {
   // Initialize AdMob SDK
   init: async (): Promise<void> => {
+    if (isInitialized) {
+      return Promise.resolve();
+    }
+    
     console.log("Initializing AdMob SDK...");
     
     // Check if running in a mobile environment with AdMob available
@@ -20,12 +26,15 @@ export const AdMobService = {
           appId: ADMOB_APP_ID
         });
         console.log("AdMob SDK initialized with real App ID");
+        isInitialized = true;
       } catch (error) {
         console.error("AdMob initialization error:", error);
         // Fallback to mock implementation if initialization fails
+        isInitialized = true; // We still mark as initialized to avoid repeated attempts
       }
     } else {
       console.log("AdMob SDK not available, using mock implementation");
+      isInitialized = true;
     }
     
     return Promise.resolve();
@@ -33,6 +42,11 @@ export const AdMobService = {
 
   // Load rewarded video ad
   loadRewardedAd: async (): Promise<void> => {
+    // Don't reload if already loaded
+    if (isAdLoaded) {
+      return Promise.resolve();
+    }
+    
     console.log("Loading rewarded video ad...");
     
     if (typeof window !== 'undefined' && window.admob) {
@@ -49,14 +63,14 @@ export const AdMobService = {
         setTimeout(() => {
           isAdLoaded = true;
           console.log("Mock rewarded ad loaded successfully");
-        }, 1500);
+        }, 1000);
       }
     } else {
       // Mock implementation for development/testing
       setTimeout(() => {
         isAdLoaded = true;
         console.log("Mock rewarded ad loaded successfully");
-      }, 1500);
+      }, 1000);
     }
     
     return Promise.resolve();
@@ -64,16 +78,22 @@ export const AdMobService = {
 
   // Show rewarded video ad
   showRewardedAd: async (): Promise<boolean> => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       if (!isAdLoaded) {
         console.log("Ad not loaded yet, loading now...");
         AdMobService.loadRewardedAd().then(() => {
-          AdMobService.showRewardedAd().then(resolve).catch(reject);
+          // Once loaded, try showing again after a short delay
+          setTimeout(() => {
+            AdMobService.showRewardedAd().then(resolve);
+          }, 1500);
         });
         return;
       }
 
       console.log("Showing rewarded video ad...");
+      
+      // Reset reward status before showing new ad
+      isRewarded = false;
       
       if (typeof window !== 'undefined' && window.admob) {
         try {
@@ -83,7 +103,6 @@ export const AdMobService = {
             isRewarded = true;
             isAdLoaded = false; // Ad is consumed
             window.admob.rewarded.removeEventListener('reward', rewardHandler);
-            resolve(true);
           };
           
           // Set up ad closed event listener
@@ -92,9 +111,7 @@ export const AdMobService = {
             isAdLoaded = false; // Ad is consumed
             window.admob.rewarded.removeEventListener('close', closeHandler);
             // If reward wasn't given, user might have closed early
-            if (!isRewarded) {
-              resolve(false);
-            }
+            resolve(isRewarded);
           };
           
           // Add event listeners
@@ -106,18 +123,25 @@ export const AdMobService = {
             console.error("Error showing ad:", error);
             window.admob.rewarded.removeEventListener('reward', rewardHandler);
             window.admob.rewarded.removeEventListener('close', closeHandler);
-            reject(error);
+            isAdLoaded = false; // Mark as not loaded for retry
+            
+            // Use mock implementation as fallback
+            setTimeout(() => {
+              isRewarded = true;
+              console.log("Mock user earned reward after error!");
+              resolve(true);
+            }, 1500);
           });
         } catch (error) {
           console.error("Error with AdMob rewarded ad:", error);
+          isAdLoaded = false; // Mark as not loaded for retry
           
           // Fallback to mock implementation
           setTimeout(() => {
             isRewarded = true;
-            isAdLoaded = false; // Ad is consumed
             console.log("Mock user earned reward!");
             resolve(true);
-          }, 2000);
+          }, 1500);
         }
       } else {
         // Mock implementation for development/testing
@@ -126,7 +150,7 @@ export const AdMobService = {
           isAdLoaded = false; // Ad is consumed
           console.log("Mock user earned reward!");
           resolve(true);
-        }, 2000);
+        }, 1500);
       }
     });
   },
