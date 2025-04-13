@@ -2,7 +2,7 @@
 
 // AdMob unit IDs - replace these with your actual AdMob unit IDs
 const ADMOB_APP_ID = "ca-app-pub-9884257131349852~4630357609"; // Your specific AdMob App ID
-const REWARDED_AD_UNIT_ID = "ca-app-pub-XXXXXXXXXXXXXXXX/NNNNNNNNNN"; // You'll need to replace this with your actual Rewarded Ad Unit ID
+const REWARDED_AD_UNIT_ID = "ca-app-pub-9884257131349852/5595358440"; // Your actual Rewarded Ad Unit ID
 
 // Track ad state
 let isAdLoaded = false;
