@@ -1,4 +1,3 @@
-
 // AdMob integration with real AdMob SDK
 
 // AdMob unit IDs - replace these with your actual AdMob unit IDs
@@ -41,10 +40,10 @@ export const AdMobService = {
   },
 
   // Load rewarded video ad
-  loadRewardedAd: async (): Promise<void> => {
+  loadRewardedAd: async (): Promise<boolean> => {
     // Don't reload if already loaded
     if (isAdLoaded) {
-      return Promise.resolve();
+      return Promise.resolve(true);
     }
     
     console.log("Loading rewarded video ad...");
@@ -57,23 +56,28 @@ export const AdMobService = {
         });
         isAdLoaded = true;
         console.log("Rewarded ad loaded successfully");
+        return true;
       } catch (error) {
         console.error("Error loading rewarded ad:", error);
         // Fallback to mock implementation
-        setTimeout(() => {
-          isAdLoaded = true;
-          console.log("Mock rewarded ad loaded successfully");
-        }, 1000);
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            isAdLoaded = true;
+            console.log("Mock rewarded ad loaded successfully");
+            resolve(true);
+          }, 1000);
+        });
       }
     } else {
       // Mock implementation for development/testing
-      setTimeout(() => {
-        isAdLoaded = true;
-        console.log("Mock rewarded ad loaded successfully");
-      }, 1000);
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          isAdLoaded = true;
+          console.log("Mock rewarded ad loaded successfully");
+          resolve(true);
+        }, 1000);
+      });
     }
-    
-    return Promise.resolve();
   },
 
   // Show rewarded video ad
