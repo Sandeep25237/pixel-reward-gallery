@@ -9,6 +9,7 @@ export interface Wallpaper {
   downloadCount: number;
   isPremium: boolean;
   requiresAd: boolean;
+  createdAt: string; // ISO string date format
 }
 
 export type WallpaperCategory = {

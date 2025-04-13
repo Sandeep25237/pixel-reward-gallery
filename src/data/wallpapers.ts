@@ -1,5 +1,5 @@
-
 import { Wallpaper, WallpaperCategory } from "@/types/wallpaper";
+import { initializeWallpapers } from "@/utils/wallpaperRotation";
 
 export const wallpaperCategories: WallpaperCategory[] = [
   { id: "all", name: "All", count: 20 },
@@ -9,7 +9,8 @@ export const wallpaperCategories: WallpaperCategory[] = [
   { id: "minimal", name: "Minimal", count: 2 },
 ];
 
-export const wallpapers: Wallpaper[] = [
+// Raw wallpaper data without createdAt field
+const rawWallpapers = [
   {
     id: "1",
     title: "Mountain Fog",
@@ -143,6 +144,9 @@ export const wallpapers: Wallpaper[] = [
     requiresAd: false,
   },
 ];
+
+// Initialize wallpapers with creation dates
+export const wallpapers: Wallpaper[] = initializeWallpapers(rawWallpapers);
 
 export const getWallpapersByCategory = (categoryId: string): Wallpaper[] => {
   if (categoryId === "all") return wallpapers;
